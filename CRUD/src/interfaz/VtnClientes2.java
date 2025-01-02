@@ -29,6 +29,7 @@ public class VtnClientes2 extends JInternalFrame {
       //  setBounds(220, 100, 970, 730);
          Dbconexiones db = new Dbconexiones();
          tabDatosprod.setModel(db.mostrarCliente());
+         JOptionPane.showMessageDialog(null, "bienvenido");
     }
 
     
