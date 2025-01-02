@@ -30,6 +30,7 @@ public class VtnProductos2 extends JInternalFrame {
         Dbconexiones db = new Dbconexiones();
         jSelectproducto.setModel(db.getProducto());
         tabDatosprod.setModel(db.mostrarProducto());
+        JOptionPane.showInternalMessageDialog(null, "Bienvenido...");
 
     }
 
