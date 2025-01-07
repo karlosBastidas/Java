@@ -127,7 +127,7 @@ public class Dbconexiones {
                 Object[] filas = new Object[8];//para pasar las columnas 
                 filas[0] = res.getString("IDproducto");
                 filas[1] = res.getString("nombre");
-                filas[2] = res.getString("precio");
+                filas[2] =  
                 filas[3] = res.getString("cantidad");
                 dtt.addRow(filas);
 

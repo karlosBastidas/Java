@@ -1,9 +1,6 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JInternalFrame.java to edit this template
- */
 package interfaz;
 
+import clases.Producto;
 import conexion.Conexion;
 import conexion.Dbconexiones;
 import java.sql.Connection;
@@ -11,28 +8,51 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
 
 /**
  *
  * @author Carlos
  */
-public class VtnFacturas2 extends javax.swing.JInternalFrame {
+public class VtnFacturas2 extends JInternalFrame {
 
-    /**
-     * Creates new form VtnFacturas2
-     */
     public VtnFacturas2() {
         initComponents();
- Dbconexiones db = new Dbconexiones();
-           jSelectproducto.setModel(db.getProducto());
+        Dbconexiones db = new Dbconexiones();
+        jSelectproducto.setModel(db.getProducto());
+         //registro productos en la factura 
+        tablafactura = new DefaultTableModel();
+     
+        //añadir columnas
+        tablafactura.addColumn(" Nº ");
+        tablafactura.addColumn("Producto");
+        tablafactura.addColumn("Valor unitario");
+        tablafactura.addColumn("Cantidad");
+        tablafactura.addColumn("Total");
+        tabDatosprod.setModel(tablafactura);
     }
-    
-    public void obtenerCliente(String id){
+
+    //tabla factura
+    private void registroFactura(int num, String producto, double precio, int cantidad, double total) {
+        Object[] filas = new Object[5];//para pasar las columnas 
+        filas[0] = num;
+        filas[1] = producto;
+        filas[2] = precio;
+        filas[3] = cantidad;
+        filas[4] = total;
+        
+        tablafactura.addRow(filas);
+        
+    }
+
+    //metodo para obtener cliente de la base de datos.
+    public void obtenerCliente(String id) {
         try {
             String consultatabla = "SELECT * FROM Clientes where ID=?";
             Connection conectar = Conexion.conectar();
             PreparedStatement pstm = conectar.prepareStatement(consultatabla);
-              pstm.setString(1, id);
+            pstm.setString(1, id);
 
             ResultSet res = pstm.executeQuery();
 
@@ -43,31 +63,49 @@ public class VtnFacturas2 extends javax.swing.JInternalFrame {
                 filas[2] = res.getString("apellido");
                 filas[3] = res.getString("telefono");
                 filas[4] = res.getString("correo");
-               
-                            
-                           String nombre= filas[1].toString();
-                            String apellido= filas[2].toString();
-                             String telefono=filas[3].toString();
-                                 String correo=filas[4].toString();
 
-                            txt_nombre.setText(nombre);
-                            txt_idapellido.setText(apellido);
-                            txt_telefono.setText(telefono);
-                            txt_correo.setText(correo);
+                String nombre = filas[1].toString();
+                String apellido = filas[2].toString();
+                String telefono = filas[3].toString();
+                String correo = filas[4].toString();
 
-              
-                
-             
-                           
-            
-                    
-                
-            
-    }} catch (SQLException e) {
+                txt_nombre.setText(nombre);
+                txt_idapellido.setText(apellido);
+                txt_telefono.setText(telefono);
+                txt_correo.setText(correo);
+
+            }
+        } catch (SQLException e) {
             System.out.println("Error" + e.getMessage());
         }
 
+    }
+
+    //metodo para consultar el precio del producto
+    public double consultaPrecio(String prod) {
+        double val = 0;
+
+        try {
+            String consultatabla = "SELECT precio FROM Productos WHERE nombre=?";
+            Connection conectar = Conexion.conectar();
+            PreparedStatement pstm = conectar.prepareStatement(consultatabla);
+            pstm.setString(1, prod);
+            ResultSet res = pstm.executeQuery();
+
+            while (res.next()) {
+
+                val = Double.parseDouble(res.getString("precio"));
+                System.out.println("el precio es : " + val);
+
+            }
+
+        } catch (SQLException e) {
+            System.out.println("Error" + e.getMessage());
         }
+
+        return val;
+    }
+
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
@@ -303,26 +341,6 @@ public class VtnFacturas2 extends javax.swing.JInternalFrame {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-    private void txt_idclienteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txt_idclienteActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_txt_idclienteActionPerformed
-
-    private void txt_idclienteKeyTyped(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_txt_idclienteKeyTyped
-        Dbconexiones db = new Dbconexiones();
-        String idcliente = txt_idcliente.getText();
-        // jTDatoCliente.setModel(db.getcliente(idcliente));
-
-        obtenerCliente(idcliente);
-    }//GEN-LAST:event_txt_idclienteKeyTyped
-
-    private void txt_nombreActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txt_nombreActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_txt_nombreActionPerformed
-
-    private void txt_idapellidoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txt_idapellidoActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_txt_idapellidoActionPerformed
-
     private void txt_telefonoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txt_telefonoActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_txt_telefonoActionPerformed
@@ -345,7 +363,7 @@ public class VtnFacturas2 extends javax.swing.JInternalFrame {
     private void jSelectproductoItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_jSelectproductoItemStateChanged
         Dbconexiones db = new Dbconexiones();
         String seleccionprodu = jSelectproducto.getSelectedItem().toString();
-        tabDatosprod.setModel(db.getProducto2(seleccionprodu));
+        // tabDatosprod.setModel(db.getProducto2(seleccionprodu));
     }//GEN-LAST:event_jSelectproductoItemStateChanged
 
     private void jSelectproductoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jSelectproductoActionPerformed
@@ -358,17 +376,40 @@ public class VtnFacturas2 extends javax.swing.JInternalFrame {
 
     private void agregarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_agregarActionPerformed
 
-        ArrayList<String> product=new ArrayList<>();
-        
-        String producto= txt_nombre.getText();
-        
-        
-        
-        
-  
+        int cantidad = Integer.parseInt(txt_Cantidad.getText());
+        String seleccionproducto = jSelectproducto.getSelectedItem().toString();
+        double precio = consultaPrecio(seleccionproducto);
+        double valor_total = cantidad * precio;
+        System.out.println("valor del producto total es:" + valor_total);
+
+        conteo++;
+
+        registroFactura(conteo, seleccionproducto, precio, cantidad, valor_total);
+
+
     }//GEN-LAST:event_agregarActionPerformed
 
+    private void txt_idapellidoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txt_idapellidoActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_txt_idapellidoActionPerformed
 
+    private void txt_nombreActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txt_nombreActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_txt_nombreActionPerformed
+
+    private void txt_idclienteKeyTyped(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_txt_idclienteKeyTyped
+        Dbconexiones db = new Dbconexiones();
+        String idcliente = txt_idcliente.getText();
+        // jTDatoCliente.setModel(db.getcliente(idcliente));
+
+        obtenerCliente(idcliente);
+    }//GEN-LAST:event_txt_idclienteKeyTyped
+
+    private void txt_idclienteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txt_idclienteActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_txt_idclienteActionPerformed
+    private DefaultTableModel tablafactura;
+    public int conteo = 1;
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton agregar;
     private javax.swing.JButton btnGuardar;
