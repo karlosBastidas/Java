@@ -1,3 +1,4 @@
+
 package interfaz;
 
 
@@ -17,6 +18,7 @@ import javax.swing.table.DefaultTableModel;
  *
  * @author Carlos
  */
+
 public class VtnFacturas2 extends JInternalFrame {
 
     public VtnFacturas2() {
@@ -36,7 +38,7 @@ public class VtnFacturas2 extends JInternalFrame {
     }
 
     //tabla factura
-    private void registroFactura(int num, String producto, double precio, int cantidad, double total, String fecha) {
+    private void registroFactura(int num, String producto, double precio, int cantidad, double total) {
         Object[] filas = new Object[5];//para pasar las columnas 
         filas[0] = num;
         filas[1] = producto;
@@ -45,18 +47,24 @@ public class VtnFacturas2 extends JInternalFrame {
         filas[4] = total;
         
         tablafactura.addRow(filas);
-        try {
-            String consulta= "INSERT INTO facturas(fecha_emision,monto)  values(?,?)";
+     
+        
+        
+    }
+   private void guardar_Factura(int id,String fecha,double totalfact){
+          try {
+            String consulta= "INSERT INTO facturas(id_cliente,fecha_emision,monto)  values(?,?)";
              Connection conectar = Conexion.conectar();
             PreparedStatement pstm = conectar.prepareStatement(consulta);
-            pstm.setString(1, fecha);
-             pstm.setDouble(2, total);
+             pstm.setInt(1, id);
+            pstm.setString(2, fecha);
+             pstm.setDouble(3, totalfact);
              pstm.executeUpdate();
         } catch (Exception e) {
             System.out.println("Error" + e.getMessage());
         }
-    }
-   
+       
+   }
     //metodo para obtener cliente de la base de datos.
     public void obtenerCliente(String id) {
         try {
@@ -116,6 +124,36 @@ public class VtnFacturas2 extends JInternalFrame {
 
         return val;
     }
+    
+    //validacion Stock
+    
+    private boolean validarStock(int cantidad,String prod){
+int val;
+         try {
+            String consultatabla = "SELECT cantidad FROM Productos WHERE nombre=?";
+            Connection conectar = Conexion.conectar();
+            PreparedStatement pstm = conectar.prepareStatement(consultatabla);
+            pstm.setString(1, prod);
+            ResultSet res = pstm.executeQuery();
+
+            while (res.next()) {
+
+                val = (res.getInt("cantidad"));
+                System.out.println("el Stock que hay  es : " + val);
+                if (cantidad>val) {
+                   JOptionPane.showMessageDialog(null, "no hay suficientes productos");
+                   return false;
+                }
+            }
+
+        } catch (SQLException e) {
+            System.out.println("Error" + e.getMessage());
+        }
+
+        return true;
+    }
+        
+    
 
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
@@ -139,7 +177,7 @@ public class VtnFacturas2 extends JInternalFrame {
         jLabel7 = new javax.swing.JLabel();
         txt_Cantidad = new javax.swing.JTextField();
         jLabel8 = new javax.swing.JLabel();
-        txt_Cantidad1 = new javax.swing.JTextField();
+        txt_Total = new javax.swing.JTextField();
         btnGuardar = new javax.swing.JButton();
         quitar = new javax.swing.JButton();
         agregar = new javax.swing.JButton();
@@ -230,6 +268,12 @@ public class VtnFacturas2 extends JInternalFrame {
 
         jLabel7.setText("Cantidad");
 
+        txt_Cantidad.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                txt_CantidadActionPerformed(evt);
+            }
+        });
+
         jLabel8.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         jLabel8.setText("Total");
 
@@ -264,7 +308,7 @@ public class VtnFacturas2 extends JInternalFrame {
                             .addGroup(jPanel1Layout.createSequentialGroup()
                                 .addComponent(jLabel8)
                                 .addGap(18, 18, 18)
-                                .addComponent(txt_Cantidad1, javax.swing.GroupLayout.PREFERRED_SIZE, 140, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addComponent(txt_Total, javax.swing.GroupLayout.PREFERRED_SIZE, 140, javax.swing.GroupLayout.PREFERRED_SIZE))
                             .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                                 .addGroup(jPanel1Layout.createSequentialGroup()
                                     .addComponent(jLabel6)
@@ -352,7 +396,7 @@ public class VtnFacturas2 extends JInternalFrame {
                         .addComponent(quitar, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(txt_Cantidad1, javax.swing.GroupLayout.PREFERRED_SIZE, 26, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(txt_Total, javax.swing.GroupLayout.PREFERRED_SIZE, 26, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jLabel8))
                 .addGap(18, 18, 18)
                 .addComponent(btnGuardar)
@@ -395,23 +439,42 @@ public class VtnFacturas2 extends JInternalFrame {
 
     private void btnGuardarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnGuardarActionPerformed
       
+        int idcliente=Integer.parseInt(txt_idcliente.getText());
+       int valtotal2=Integer.parseInt(txt_Total.getText());
+       String fechafac=txt_fecha.getText();
+        
+        guardar_Factura(idcliente,fechafac, valtotal2);
 
     }//GEN-LAST:event_btnGuardarActionPerformed
 
     private void agregarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_agregarActionPerformed
 
         int cantidad = Integer.parseInt(txt_Cantidad.getText());
+
         String seleccionproducto = jSelectproducto.getSelectedItem().toString();
+       if (validarStock(cantidad, seleccionproducto)) {
+           System.out.println("VALIDACION EXITOSA");
+        }
         double precio = consultaPrecio(seleccionproducto);
         double valor_total = cantidad * precio;
         LocalDate fecha = LocalDate.now();
-         String fecha2 = fecha.toString();
-         txt_fecha.setText(fecha2);
-        System.out.println("valor del producto total es:" + valor_total+" "+fecha2);
+         fecha2 = fecha.toString();
+        txt_fecha.setText(fecha2);
+        
+       
+        System.out.println("valor del producto total es:" + valor_total + " " + fecha2);
 
         conteo++;
+        if (conteo>1) {
+            valor_total+=valor_total;
+            String total=valor_total+"";
+             txt_Total.setText(total);
+        }else{
+            txt_Total.setText(valor_total+"");
+        }
+        
 
-        registroFactura(conteo, seleccionproducto, precio, cantidad, valor_total,fecha2);
+        registroFactura(conteo, seleccionproducto, precio, cantidad, valor_total);
 
 
     }//GEN-LAST:event_agregarActionPerformed
@@ -435,8 +498,14 @@ public class VtnFacturas2 extends JInternalFrame {
     private void txt_idclienteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txt_idclienteActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_txt_idclienteActionPerformed
+
+    private void txt_CantidadActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txt_CantidadActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_txt_CantidadActionPerformed
     private DefaultTableModel tablafactura;
     public int conteo = 1;
+     public String fecha2;
+      public double valtotal;
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton agregar;
     private javax.swing.JButton btnGuardar;
@@ -455,7 +524,7 @@ public class VtnFacturas2 extends JInternalFrame {
     private javax.swing.JButton quitar;
     private javax.swing.JTable tabDatosprod;
     private javax.swing.JTextField txt_Cantidad;
-    private javax.swing.JTextField txt_Cantidad1;
+    private javax.swing.JTextField txt_Total;
     private javax.swing.JTextField txt_correo;
     private javax.swing.JLabel txt_fecha;
     private javax.swing.JTextField txt_idapellido;
