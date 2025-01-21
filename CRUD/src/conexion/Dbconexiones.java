@@ -145,7 +145,7 @@ public class Dbconexiones {
         dtt.addColumn("IDproducto");
         dtt.addColumn("nombre");
         dtt.addColumn("precio");
-        dtt.addColumn("cantidad");
+        dtt.addColumn("cantidad(stock)");
 
         try {
             String consultatabla = "SELECT * FROM productos";

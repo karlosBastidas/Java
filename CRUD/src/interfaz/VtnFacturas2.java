@@ -1,7 +1,6 @@
-
 package interfaz;
 
-
+import clases.Producto;
 import conexion.Conexion;
 import conexion.Dbconexiones;
 import java.sql.Connection;
@@ -11,6 +10,7 @@ import java.sql.SQLException;
 
 import java.util.Calendar;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 
@@ -18,16 +18,15 @@ import javax.swing.table.DefaultTableModel;
  *
  * @author Carlos
  */
-
 public class VtnFacturas2 extends JInternalFrame {
 
     public VtnFacturas2() {
         initComponents();
         Dbconexiones db = new Dbconexiones();
         jSelectproducto.setModel(db.getProducto());
-         //registro productos en la factura 
+        //registro productos en la factura 
         tablafactura = new DefaultTableModel();
-     
+
         //añadir columnas
         tablafactura.addColumn(" Nº ");
         tablafactura.addColumn("Producto");
@@ -45,26 +44,26 @@ public class VtnFacturas2 extends JInternalFrame {
         filas[2] = precio;
         filas[3] = cantidad;
         filas[4] = total;
-        
+
         tablafactura.addRow(filas);
-     
-        
-        
+
     }
-   private void guardar_Factura(int id,String fecha,double totalfact){
-          try {
-            String consulta= "INSERT INTO facturas(id_cliente,fecha_emision,monto)  values(?,?)";
-             Connection conectar = Conexion.conectar();
+
+    private void guardar_Factura(int id, String fecha, double totalfact) {
+        try {
+            String consulta = "INSERT INTO facturas(id_cliente,fecha_emision,monto)  values(?,?,?)";
+            Connection conectar = Conexion.conectar();
             PreparedStatement pstm = conectar.prepareStatement(consulta);
-             pstm.setInt(1, id);
+            pstm.setInt(1, id);
             pstm.setString(2, fecha);
-             pstm.setDouble(3, totalfact);
-             pstm.executeUpdate();
+            pstm.setDouble(3, totalfact);
+            pstm.executeUpdate();
         } catch (Exception e) {
             System.out.println("Error" + e.getMessage());
         }
-       
-   }
+
+    }
+
     //metodo para obtener cliente de la base de datos.
     public void obtenerCliente(String id) {
         try {
@@ -124,25 +123,25 @@ public class VtnFacturas2 extends JInternalFrame {
 
         return val;
     }
-    
+
     //validacion Stock
-    
-    private boolean validarStock(int cantidad,String prod){
-int val;
-         try {
+    private boolean validarStock(int cantidad, String prod) {
+        int val = 0;
+        try {
             String consultatabla = "SELECT cantidad FROM Productos WHERE nombre=?";
             Connection conectar = Conexion.conectar();
             PreparedStatement pstm = conectar.prepareStatement(consultatabla);
             pstm.setString(1, prod);
+            System.out.println("producto: "+prod);
             ResultSet res = pstm.executeQuery();
 
             while (res.next()) {
-
+              
                 val = (res.getInt("cantidad"));
                 System.out.println("el Stock que hay  es : " + val);
-                if (cantidad>val) {
-                   JOptionPane.showMessageDialog(null, "no hay suficientes productos");
-                   return false;
+                if (cantidad > val) {
+
+                    return false;
                 }
             }
 
@@ -152,8 +151,27 @@ int val;
 
         return true;
     }
-        
     
+    public void actuallizarStock(int cant,String pro){
+         try {
+            
+            String consultatabla = "update  productos set   cantidad=cantidad-? where nombre=?";
+            Connection conectar = Conexion.conectar();
+            PreparedStatement pstm = conectar.prepareStatement(consultatabla);
+            
+         
+            pstm.setInt(1, cant);
+            pstm.setString(2, pro);
+            
+
+            pstm.executeUpdate();
+
+           
+
+        } catch (SQLException e) {
+            System.out.println("Error" + e.getMessage());
+        }
+    }; 
 
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
@@ -286,6 +304,11 @@ int val;
         });
 
         quitar.setText("-");
+        quitar.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                quitarActionPerformed(evt);
+            }
+        });
 
         agregar.setText("+");
         agregar.addActionListener(new java.awt.event.ActionListener() {
@@ -438,43 +461,52 @@ int val;
     }//GEN-LAST:event_jSelectproductoActionPerformed
 
     private void btnGuardarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnGuardarActionPerformed
-      
-        int idcliente=Integer.parseInt(txt_idcliente.getText());
-       int valtotal2=Integer.parseInt(txt_Total.getText());
-       String fechafac=txt_fecha.getText();
-        
-        guardar_Factura(idcliente,fechafac, valtotal2);
+        bandera=true;
+        int idcliente = Integer.parseInt(txt_idcliente.getText());
+        int valtotal2 = Integer.parseInt(txt_Total.getText());
+        String fechafac = txt_fecha.getText();
+        actuallizarStock(cantidad,seleccionproducto); 
+        guardar_Factura(idcliente, fechafac, valtotal2);
 
     }//GEN-LAST:event_btnGuardarActionPerformed
 
     private void agregarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_agregarActionPerformed
 
-        int cantidad = Integer.parseInt(txt_Cantidad.getText());
-
-        String seleccionproducto = jSelectproducto.getSelectedItem().toString();
-       if (validarStock(cantidad, seleccionproducto)) {
-           System.out.println("VALIDACION EXITOSA");
-        }
-        double precio = consultaPrecio(seleccionproducto);
-        double valor_total = cantidad * precio;
-        LocalDate fecha = LocalDate.now();
-         fecha2 = fecha.toString();
-        txt_fecha.setText(fecha2);
+        int result = 0;
+        cantidad = Integer.parseInt(txt_Cantidad.getText());
+        seleccionproducto = jSelectproducto.getSelectedItem().toString();
         
-       
-        System.out.println("valor del producto total es:" + valor_total + " " + fecha2);
-
-        conteo++;
-        if (conteo>1) {
-            valor_total+=valor_total;
-            String total=valor_total+"";
-             txt_Total.setText(total);
-        }else{
-            txt_Total.setText(valor_total+"");
-        }
+        if (validarStock(cantidad, seleccionproducto)) {
+            System.out.println("VALIDACION EXITOSA");
+            
+                  
+            
         
+            double precio = consultaPrecio(seleccionproducto);
+            double valor_total = Math.round(cantidad * precio);
+            LocalDate fecha = LocalDate.now();
+            fecha2 = fecha.toString();
+            txt_fecha.setText(fecha2);
 
-        registroFactura(conteo, seleccionproducto, precio, cantidad, valor_total);
+            registroFactura(conteo, seleccionproducto, precio, cantidad, valor_total);
+            int fil = tabDatosprod.getRowCount();
+            System.out.println(".." + fil);
+            for (int i = 0; i < fil; i++) {
+                System.out.println("prueba 1");
+                String a = tabDatosprod.getValueAt(i, 4) + "";
+                System.out.println("Valor en fila " + i + ": " + a);
+                double b = Double.parseDouble(a);
+                result += b;
+
+            }
+
+            String resultado = result + "";
+            txt_Total.setText(resultado);
+
+            conteo++;
+        } else {
+            JOptionPane.showMessageDialog(null, "no hay suficientes productos");
+        }
 
 
     }//GEN-LAST:event_agregarActionPerformed
@@ -502,10 +534,24 @@ int val;
     private void txt_CantidadActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txt_CantidadActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_txt_CantidadActionPerformed
+
+    private void quitarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_quitarActionPerformed
+    int fila = tabDatosprod.getSelectedRow();
+        
+    if (fila >= 0) {
+            tablafactura.removeRow(fila);
+        }  else{
+        JOptionPane.showMessageDialog(null,"Debe seleccionar una fila para eliminar");
+    }// TODO add your handling code here:
+    }//GEN-LAST:event_quitarActionPerformed
     private DefaultTableModel tablafactura;
     public int conteo = 1;
-     public String fecha2;
-      public double valtotal;
+    public String fecha2;
+    public double valtotal;
+    boolean bandera=false;
+      int cantidad;
+      String seleccionproducto;
+    
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton agregar;
     private javax.swing.JButton btnGuardar;
