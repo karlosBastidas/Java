@@ -4,37 +4,48 @@
  */
 package interfaz;
 
+import com.itextpdf.text.BaseColor;
+import com.itextpdf.text.Chunk;
+import com.itextpdf.text.Document;
+import com.itextpdf.text.DocumentException;
+import com.itextpdf.text.Font;
+import com.itextpdf.text.FontFactory;
+import com.itextpdf.text.Paragraph;
+import com.itextpdf.text.pdf.PdfPTable;
+import com.itextpdf.text.pdf.PdfWriter;
 import conexion.Conexion;
 import conexion.Dbconexiones;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import javax.swing.JOptionPane;
 import javax.swing.JTextField;
 
 /**
  *
  * @author Ricardo S
  */
-
 public class VtnFacturas extends javax.swing.JFrame {
 
     /**
      * Creates new form VtnFacturas
      */
     public VtnFacturas() {
-        initComponents();       
-         setBounds(220, 100, 970, 730);
-          Dbconexiones db = new Dbconexiones();
-           jSelectproducto.setModel(db.getProducto());
+        initComponents();
+        setBounds(220, 100, 970, 730);
+        Dbconexiones db = new Dbconexiones();
+        jSelectproducto.setModel(db.getProducto());
     }
-    
-    public void obtenerCliente(String id){
+
+    public void obtenerCliente(String id) {
         try {
             String consultatabla = "SELECT * FROM Clientes where ID=?";
             Connection conectar = Conexion.conectar();
             PreparedStatement pstm = conectar.prepareStatement(consultatabla);
-              pstm.setString(1, id);
+            pstm.setString(1, id);
 
             ResultSet res = pstm.executeQuery();
 
@@ -45,31 +56,134 @@ public class VtnFacturas extends javax.swing.JFrame {
                 filas[2] = res.getString("apellido");
                 filas[3] = res.getString("telefono");
                 filas[4] = res.getString("correo");
-               
-                            
-                           String nombre= filas[1].toString();
-                            String apellido= filas[2].toString();
-                             String telefono=filas[3].toString();
-                                 String correo=filas[4].toString();
 
-                            txt_nombre.setText(nombre);
-                            txt_idapellido.setText(apellido);
-                            txt_telefono.setText(telefono);
-                            txt_correo.setText(correo);
+                String nombre = filas[1].toString();
+                String apellido = filas[2].toString();
+                String telefono = filas[3].toString();
+                String correo = filas[4].toString();
 
-              
-                
-             
-                           
-            
-                    
-                
-            
-    }} catch (SQLException e) {
+                txt_nombre.setText(nombre);
+                txt_idapellido.setText(apellido);
+                txt_telefono.setText(telefono);
+                txt_correo.setText(correo);
+
+            }
+        } catch (SQLException e) {
             System.out.println("Error" + e.getMessage());
         }
 
+    }
+
+    //IMPRIMIR FACTURA
+    public void imprimirPdf3(int id, String nombre) {
+        Document documento = new Document();
+        try {
+            String ruta = System.getProperty("user.home") + "\\Desktop\\'" + nombre + "'.pdf";
+            PdfWriter.getInstance(documento, new FileOutputStream(ruta));
+            com.itextpdf.text.Image header = com.itextpdf.text.Image.getInstance("src/images/banner.jpg");
+            header.scaleToFit(500, 600);
+            header.setAlignment(Chunk.ALIGN_CENTER);
+            Paragraph parrafo = new Paragraph();
+            parrafo.setAlignment(Paragraph.ALIGN_CENTER);
+            parrafo.add("FACTURA Cliente. \n\n");
+            parrafo.setFont(FontFactory.getFont("Tahoma", 18, Font.BOLD, BaseColor.DARK_GRAY));
+
+            documento.open();
+            documento.add(header);
+            documento.add(parrafo);
+            PdfPTable tablafac = new PdfPTable(4);
+            tablafac.addCell("ID");
+            tablafac.addCell("NOMBRE");
+            tablafac.addCell("APELLIDO");
+            tablafac.addCell("TELEFONO");
+            //tablaCliente.addCell("Genero");
+            //tablaCliente.addCell("Pais");
+            //tablaCliente.addCell("Lenguage");
+
+            com.mysql.jdbc.Connection cn = null;
+            try {
+                cn = (com.mysql.jdbc.Connection) Conexion.conectar();
+                com.mysql.jdbc.PreparedStatement pst = (com.mysql.jdbc.PreparedStatement) cn.prepareStatement(
+                        "select ID,nombre,apellido,telefono  from clientes where nombre=?");
+
+                pst.setString(1, nombre);
+                ResultSet rs = pst.executeQuery();
+
+                if (rs.next()) {
+                    do {
+                        tablafac.addCell(rs.getString(1));
+                        tablafac.addCell(rs.getString(2));
+                        tablafac.addCell(rs.getString(3));
+                        tablafac.addCell(rs.getString(4));
+                    } while (rs.next());
+
+                    documento.add(tablafac);
+                }
+            } catch (SQLException e) {
+                System.err.println("Error al obtener los datos.. " + e);
+            } finally {
+                if (cn != null) {
+                    try {
+                        cn.close();
+                    } catch (SQLException e) {
+                        System.err.println("Error al cerrar la conexión " + e);
+                    }
+                }
+            }
+
+            Paragraph parrafo2 = new Paragraph();
+            parrafo2.setAlignment(Paragraph.ALIGN_CENTER);
+            parrafo2.add("\n\n DESCRIPCION \n\n");
+            parrafo2.setFont(FontFactory.getFont("Tahoma", 18, Font.BOLD, BaseColor.DARK_GRAY));
+
+            documento.add(parrafo2);
+
+            PdfPTable tablafactura = new PdfPTable(3);
+
+            tablafactura.addCell("producto");
+            tablafactura.addCell("valor unitario");
+            tablafactura.addCell("cantidad");
+          //  tablafactura.addCell("valor Total");
+
+            com.mysql.jdbc.Connection cn2 = null;
+            try {
+                cn2 = (com.mysql.jdbc.Connection) Conexion.conectar();
+                com.mysql.jdbc.PreparedStatement pst2 = (com.mysql.jdbc.PreparedStatement) cn2.prepareStatement(
+                        "select p.nombre,p.precio,p.cantidad,f.monto from clientes c ,productos p, facturas f,reg_fact_prod rfp where rfp.id_factura=f.id_factura and f.id_cliente=c.ID and p.ID_producto=rfp.id_producto and c.id_cliente like ?");
+                 pst2.setString(1,"%"+id+"%");
+
+                ResultSet rs2 = pst2.executeQuery();
+
+                if (rs2.next()) {
+                    do {
+                        tablafactura.addCell(rs2.getString(1));
+                        tablafactura.addCell(rs2.getString(2));
+                        tablafactura.addCell(rs2.getString(3));
+
+                    } while (rs2.next());
+
+                    documento.add(tablafactura);
+                }
+            } catch (SQLException e) {
+                System.err.println("Error al obtener los datos  " + e);
+            } finally {
+                if (cn2 != null) {
+                    try {
+                        cn2.close();
+                    } catch (SQLException e) {
+                        System.err.println("Error al cerrar la conexión  " + e);
+                    }
+                }
+            }
+
+            documento.close();
+            JOptionPane.showMessageDialog(null, "PDF del cliente creado correctamente");
+
+        } catch (DocumentException | IOException e) {
+            System.err.println("Error en PDF o ruta de imagen: " + e);
+            JOptionPane.showMessageDialog(null, "¡¡¡Error en PDF!!!, contacte con el administrador");
         }
+    }
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -99,6 +213,7 @@ public class VtnFacturas extends javax.swing.JFrame {
         txt_Cantidad = new javax.swing.JTextField();
         jLabel8 = new javax.swing.JLabel();
         txt_Cantidad1 = new javax.swing.JTextField();
+        btnimprimir = new javax.swing.JButton();
         btnGuardar = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
@@ -190,6 +305,13 @@ public class VtnFacturas extends javax.swing.JFrame {
         jLabel8.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         jLabel8.setText("Total");
 
+        btnimprimir.setText("IMPRIMIR");
+        btnimprimir.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnimprimirActionPerformed(evt);
+            }
+        });
+
         btnGuardar.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         btnGuardar.setText("Guardar factura");
         btnGuardar.addActionListener(new java.awt.event.ActionListener() {
@@ -249,7 +371,9 @@ public class VtnFacturas extends javax.swing.JFrame {
                         .addGap(221, 221, 221))
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
                         .addComponent(btnGuardar)
-                        .addGap(517, 517, 517))))
+                        .addGap(18, 18, 18)
+                        .addComponent(btnimprimir)
+                        .addGap(424, 424, 424))))
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -282,7 +406,9 @@ public class VtnFacturas extends javax.swing.JFrame {
                     .addComponent(txt_Cantidad1, javax.swing.GroupLayout.PREFERRED_SIZE, 26, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jLabel8))
                 .addGap(18, 18, 18)
-                .addComponent(btnGuardar)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(btnGuardar)
+                    .addComponent(btnimprimir))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
@@ -352,50 +478,57 @@ public class VtnFacturas extends javax.swing.JFrame {
     }//GEN-LAST:event_btnGuardarActionPerformed
 
     private void txt_idclienteKeyTyped(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_txt_idclienteKeyTyped
-         Dbconexiones db = new Dbconexiones();
-             String idcliente = txt_idcliente.getText();
-           // jTDatoCliente.setModel(db.getcliente(idcliente));
-      
+        Dbconexiones db = new Dbconexiones();
+        String idcliente = txt_idcliente.getText();
+        // jTDatoCliente.setModel(db.getcliente(idcliente));
+
         obtenerCliente(idcliente);
     }//GEN-LAST:event_txt_idclienteKeyTyped
+
+    private void btnimprimirActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnimprimirActionPerformed
+  String nombre=txt_nombre.getText();
+        int id=Integer.parseInt(txt_idcliente.getText());
+        imprimirPdf3(id, nombre) ;       //        // TODO add your handling code here:
+    }//GEN-LAST:event_btnimprimirActionPerformed
 
     /**
      * @param args the command line arguments
      */
     public static void main(String args[]) {
-    /* Set the Nimbus look and feel */
-    //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-    /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
+        /* Set the Nimbus look and feel */
+        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
+        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
          * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
-     */
-    try {
-        for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
-            if ("Nimbus".equals(info.getName())) {
-                javax.swing.UIManager.setLookAndFeel(info.getClassName());
-                break;
+         */
+        try {
+            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
+                if ("Nimbus".equals(info.getName())) {
+                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
+                    break;
+                }
             }
+        } catch (ClassNotFoundException ex) {
+            java.util.logging.Logger.getLogger(VtnFacturas.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (InstantiationException ex) {
+            java.util.logging.Logger.getLogger(VtnFacturas.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (IllegalAccessException ex) {
+            java.util.logging.Logger.getLogger(VtnFacturas.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (javax.swing.UnsupportedLookAndFeelException ex) {
+            java.util.logging.Logger.getLogger(VtnFacturas.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
-    } catch (ClassNotFoundException ex) {
-        java.util.logging.Logger.getLogger(VtnFacturas.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-    } catch (InstantiationException ex) {
-        java.util.logging.Logger.getLogger(VtnFacturas.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-    } catch (IllegalAccessException ex) {
-        java.util.logging.Logger.getLogger(VtnFacturas.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-    } catch (javax.swing.UnsupportedLookAndFeelException ex) {
-        java.util.logging.Logger.getLogger(VtnFacturas.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-    }
-    //</editor-fold>
+        //</editor-fold>
 
-    /* Create and display the form */
-    java.awt.EventQueue.invokeLater(new Runnable() {
-        public void run() {
-            new VtnFacturas().setVisible(true);
-        }
-    });
-}
+        /* Create and display the form */
+        java.awt.EventQueue.invokeLater(new Runnable() {
+            public void run() {
+                new VtnFacturas().setVisible(true);
+            }
+        });
+    }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton btnGuardar;
+    private javax.swing.JButton btnimprimir;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
