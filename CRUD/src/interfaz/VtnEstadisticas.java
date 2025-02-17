@@ -1,22 +1,122 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JInternalFrame.java to edit this template
- */
+
 package interfaz;
 
-/**
- *
- * @author Carlos
- */
+import conexion.Conexion;
+import conexion.Dbconexiones;
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.Graphics;
+import java.awt.Image;
+import java.awt.Toolkit;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+
 public class VtnEstadisticas extends javax.swing.JInternalFrame {
 
-    /**
-     * Creates new form VtnEstadisticas
-     */
     public VtnEstadisticas() {
         initComponents();
+     
     }
+    private boolean bandera = false;
+    private String[] productos = new String[3];
+    private int[] cantidades = new int[3];
+    
+    public void GraficaProductos(String idCliente) throws SQLException {
+        obtenerProductosMasConsumidos(idCliente);
+        bandera = true;
+    }
+    
+     private void obtenerProductosMasConsumidos(String idCliente) throws SQLException {
+  
+          String query = "SELECT p.nombre, SUM(df.cantidad) AS total_consumido " +
+                       "FROM reg_fact_prod df " +
+                       "JOIN productos p ON df.id_producto = p.id_producto " +
+                       "JOIN facturas f ON df.id_factura = f.id_factura " +
+                       "WHERE f.id_cliente = ? " +
+                       "GROUP BY p.nombre " +
+                       "ORDER BY total_consumido DESC " +
+                       "LIMIT 3";
+          try {
+                  Connection conectar = Conexion.conectar();
+                 PreparedStatement pstm = conectar.prepareStatement(query);
+                 pstm.setString(1, idCliente);
 
+                 ResultSet res = pstm.executeQuery();
+             int i = 0;
+            while (res.next() && i < 3) {
+                productos[i] = res.getString("nombre");
+                cantidades[i] = res.getInt("total_consumido");
+                i++;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+       
+            
+    }
+     
+      @Override
+    public void paint(Graphics g) {
+        super.paint(g);
+        if (bandera) {
+            int total = cantidades[0] + cantidades[1] + cantidades[2];
+
+            if (total == 0) return; // Evitar división por cero si no hay productos.
+
+            int[] grados = new int[3];
+            for (int i = 0; i < 3; i++) {
+                grados[i] = cantidades[i] * 360 / total;
+            }
+
+            Color[] colores = {Color.RED, Color.GREEN, Color.BLUE};
+
+            int startAngle = 0;
+            for (int i = 0; i < 3; i++) {
+                g.setColor(colores[i]);
+                g.fillArc(50, 250, 200, 200, startAngle, grados[i]);
+                startAngle += grados[i];
+
+                g.fillRect(270, 250 + (i * 30), 20, 20);
+                g.setColor(Color.BLACK);
+                g.drawString(productos[i] + ": " + (cantidades[i] * 100 / total) + "%", 295, 260 + (i * 30));
+            }
+        }
+    }
+    public void obtenerCliente(String id) {
+        try {
+            String consultatabla = "SELECT * FROM Clientes where ID=?";
+            Connection conectar = Conexion.conectar();
+            PreparedStatement pstm = conectar.prepareStatement(consultatabla);
+            pstm.setString(1, id);
+
+            ResultSet res = pstm.executeQuery();
+
+            while (res.next()) {
+                Object[] filas = new Object[5];//para pasar las columnas 
+                filas[0] = res.getString("ID");
+                filas[1] = res.getString("nombre");
+                filas[2] = res.getString("apellido");
+                filas[3] = res.getString("telefono");
+                filas[4] = res.getString("correo");
+
+                String nombre = filas[1].toString();
+                String apellido = filas[2].toString();
+              
+                txt_nombre.setText(nombre);
+                txt_idapellido.setText(apellido);
+             
+            }
+        } catch (SQLException e) {
+            System.out.println("Error" + e.getMessage());
+        }
+
+    }
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -26,21 +126,159 @@ public class VtnEstadisticas extends javax.swing.JInternalFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
+        jPanel1 = new javax.swing.JPanel();
+        jLabel1 = new javax.swing.JLabel();
+        txt_idcliente = new javax.swing.JTextField();
+        jLabel2 = new javax.swing.JLabel();
+        txt_nombre = new javax.swing.JTextField();
+        txt_idapellido = new javax.swing.JTextField();
+        jLabel3 = new javax.swing.JLabel();
+        jButton1 = new javax.swing.JButton();
+
+        jLabel1.setText("ID Cliente");
+
+        txt_idcliente.setSelectionColor(new java.awt.Color(255, 0, 0));
+        txt_idcliente.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                txt_idclienteActionPerformed(evt);
+            }
+        });
+        txt_idcliente.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyTyped(java.awt.event.KeyEvent evt) {
+                txt_idclienteKeyTyped(evt);
+            }
+        });
+
+        jLabel2.setText("Nombre");
+
+        txt_nombre.setSelectionColor(new java.awt.Color(255, 0, 0));
+        txt_nombre.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                txt_nombreActionPerformed(evt);
+            }
+        });
+
+        txt_idapellido.setSelectionColor(new java.awt.Color(255, 0, 0));
+        txt_idapellido.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                txt_idapellidoActionPerformed(evt);
+            }
+        });
+
+        jLabel3.setText("Apellido");
+
+        jButton1.setText("GRAFICAR");
+        jButton1.setBorder(javax.swing.BorderFactory.createBevelBorder(javax.swing.border.BevelBorder.RAISED));
+        jButton1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton1ActionPerformed(evt);
+            }
+        });
+
+        javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
+        jPanel1.setLayout(jPanel1Layout);
+        jPanel1Layout.setHorizontalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addGap(234, 234, 234)
+                .addComponent(jButton1)
+                .addContainerGap(298, Short.MAX_VALUE))
+            .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                .addGroup(jPanel1Layout.createSequentialGroup()
+                    .addContainerGap()
+                    .addComponent(jLabel1)
+                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                    .addComponent(txt_idcliente, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addGap(18, 18, 18)
+                    .addComponent(jLabel2)
+                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                    .addComponent(txt_nombre, javax.swing.GroupLayout.PREFERRED_SIZE, 140, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addGap(24, 24, 24)
+                    .addComponent(jLabel3)
+                    .addGap(8, 8, 8)
+                    .addComponent(txt_idapellido, javax.swing.GroupLayout.PREFERRED_SIZE, 138, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+        );
+        jPanel1Layout.setVerticalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addGap(115, 115, 115)
+                .addComponent(jButton1, javax.swing.GroupLayout.PREFERRED_SIZE, 44, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(352, Short.MAX_VALUE))
+            .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                .addGroup(jPanel1Layout.createSequentialGroup()
+                    .addContainerGap(46, Short.MAX_VALUE)
+                    .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                        .addComponent(jLabel1)
+                        .addComponent(txt_idcliente, javax.swing.GroupLayout.PREFERRED_SIZE, 26, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(jLabel2)
+                        .addComponent(jLabel3)
+                        .addComponent(txt_idapellido, javax.swing.GroupLayout.PREFERRED_SIZE, 26, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(txt_nombre, javax.swing.GroupLayout.PREFERRED_SIZE, 26, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGap(439, 439, 439)))
+        );
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 560, Short.MAX_VALUE)
+            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 286, Short.MAX_VALUE)
+            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         );
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
+    private void txt_idclienteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txt_idclienteActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_txt_idclienteActionPerformed
+
+    private void txt_idclienteKeyTyped(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_txt_idclienteKeyTyped
+        Dbconexiones db = new Dbconexiones();
+        String idcliente = txt_idcliente.getText();
+        // jTDatoCliente.setModel(db.getcliente(idcliente));
+
+        obtenerCliente(idcliente);
+       
+        try {
+            GraficaProductos(idcliente);
+        } catch (SQLException ex) {
+            Logger.getLogger(VtnEstadisticas.class.getName()).log(Level.SEVERE, null, ex);
+        }
+      
+    }//GEN-LAST:event_txt_idclienteKeyTyped
+
+    private void txt_nombreActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txt_nombreActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_txt_nombreActionPerformed
+
+    private void txt_idapellidoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txt_idapellidoActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_txt_idapellidoActionPerformed
+
+    private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
+        String idcliente = txt_idcliente.getText(); 
+        try {
+            GraficaProductos(idcliente);
+        } catch (SQLException ex) {
+            Logger.getLogger(VtnEstadisticas.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }//GEN-LAST:event_jButton1ActionPerformed
+
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton jButton1;
+    private javax.swing.JLabel jLabel1;
+    private javax.swing.JLabel jLabel2;
+    private javax.swing.JLabel jLabel3;
+    private javax.swing.JPanel jPanel1;
+    private javax.swing.JTextField txt_idapellido;
+    private javax.swing.JTextField txt_idcliente;
+    private javax.swing.JTextField txt_nombre;
     // End of variables declaration//GEN-END:variables
+
+    
 }
